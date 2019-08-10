@@ -6,6 +6,7 @@ Adds a `Cookie` instance to `request.context['cookies']` to manipulate cookies.
 ## Example
 
 ```dart
+import 'dart:io';
 import 'package:shelf_cookie/shelf_cookie.dart';
 
 var handler = const shelf.Pipeline()
