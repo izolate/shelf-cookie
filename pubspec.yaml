@@ -1,11 +1,17 @@
 name: shelf_cookie
-version: 0.1.0
+version: 1.0.0
 description: >-
   Cookie parser middleware for the Shelf ecosystem.
+  Reads cookies in request, sets cookies in response.
 author: izolate <izolate@gmail.com>
 homepage: https://github.com/izolate/shelf-cookie
 documentation: https://github.com/izolate/shelf-cookie/blob/master/README.md
+
 environment:
-  sdk: '>=2.0.0 <3.0.0'
+  sdk: ">=2.0.0 <3.0.0"
+
 dependencies:
   shelf: ^0.7.5
+
+dev_dependencies:
+  test: ^1.6.2
