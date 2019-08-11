@@ -33,6 +33,6 @@ void main() {
     var cookies = CookieParser.fromHeader('foo=bar');
     expect(cookies.toString(), equals('foo=bar'));
     cookies.set('baz', 'qux');
-    expect(cookies.toString(), equals('foo=bar; baz=qux'));
+    expect(cookies.toString(), equals('foo=bar, baz=qux'));
   });
 }

@@ -42,8 +42,8 @@ class CookieParser {
   /// Converts the [entries] to a HTTP header string value.
   String toString() {
     var str = '';
-    entries.forEach((entry, value) => str += '$entry=$value; ');
+    entries.forEach((entry, value) => str += '$entry=$value, ');
     // Trim the trailing delimiter from the end of the string.
-    return str.endsWith('; ') ? str.substring(0, str.length - 2) : str;
+    return str.endsWith(', ') ? str.substring(0, str.length - 2) : str;
   }
 }

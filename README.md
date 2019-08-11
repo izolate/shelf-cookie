@@ -17,12 +17,12 @@ import 'package:shelf_cookie/shelf_cookie.dart';
 var handler = const shelf.Pipeline()
     .addMiddleware(cookieParser())
     .addHandler((req) async {
-      var cookies = req.context['cookies'];
-      if (cookies.get('ping') == 'foo') {
-        cookies.set('pong', 'bar');
-      }
-      // Response will set cookie header.
-      // e.g. 'set-cookie': 'ping=foo; pong=bar'
-      return shelf.Response.ok('OK');
-    });
+  CookieParser cookies = req.context['cookies'];
+  if (cookies.get('ping') == 'foo') {
+    cookies.set('pong', 'bar');
+  }
+  // Response will set cookie header.
+  // e.g. 'set-cookie': 'ping=foo, pong=bar'
+  return shelf.Response.ok('OK');
+});
 ```
