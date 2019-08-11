@@ -33,7 +33,6 @@ class CookieParser {
   String get(String name) => entries[name];
 
   /// Convenience method to add a new cookie entry to [entries].
-  // void set(String name, value) => _entries.putIfAbsent(name, () => value);
   String set(String name, value) =>
       entries.update(name, (_) => value, ifAbsent: () => value);
 
