@@ -14,8 +14,7 @@ import 'cookie_parser.dart';
 shelf.Middleware cookieParser() {
   return (shelf.Handler innerHandler) {
     return (shelf.Request request) {
-      var cookies =
-          CookieParser.fromHeader(request.headers[HttpHeaders.cookieHeader]);
+      var cookies = CookieParser.fromHeader(request.headers);
       return Future.sync(() {
         return innerHandler(
           request.change(context: {'cookies': cookies}),

@@ -1,38 +1,58 @@
+import 'dart:io';
+
 import 'package:shelf_cookie/shelf_cookie.dart';
 import 'package:test/test.dart';
 
 void main() {
   test('isEmpty is true if header is empty', () {
-    var cookies = CookieParser.fromHeader(null);
+    var cookies = CookieParser.fromCookieValue(null);
     expect(cookies.isEmpty, isTrue);
   });
 
-  test('parses cookies from header', () {
-    var cookies = CookieParser.fromHeader('foo=bar; baz=qux');
+  test('parses cookies from `cookie` header value', () {
+    var cookies = CookieParser.fromCookieValue('foo=bar; baz=qux');
     expect(cookies.isEmpty, isFalse);
-    expect(cookies.get('foo'), equals('bar'));
-    expect(cookies.get('baz'), equals('qux'));
+    expect(cookies.get('foo').value, equals('bar'));
+    expect(cookies.get('baz').value, equals('qux'));
   });
 
-  test('adds cookie to entries map', () {
-    var cookies = CookieParser.fromHeader('foo=bar');
+  test('parses cookies from raw headers map', () {
+    var cookies =
+        CookieParser.fromHeader({HttpHeaders.cookieHeader: 'foo=bar; baz=qux'});
+    expect(cookies.isEmpty, isFalse);
+    expect(cookies.get('foo').value, equals('bar'));
+    expect(cookies.get('baz').value, equals('qux'));
+  });
+
+  test('adds new cookie to cookies list', () {
+    var cookies = CookieParser.fromCookieValue('foo=bar');
     expect(cookies.isEmpty, isFalse);
     expect(cookies.get('baz'), isNull);
     cookies.set('baz', 'qux');
-    expect(cookies.get('baz'), 'qux');
+    expect(cookies.get('baz').value, 'qux');
   });
 
-  test('removes cookie from entries map', () {
-    var cookies = CookieParser.fromHeader('foo=bar; baz=qux');
-    expect(cookies.get('baz'), equals('qux'));
+  test('removes cookie from cookies list by name', () {
+    var cookies = CookieParser.fromCookieValue('foo=bar; baz=qux');
+    expect(cookies.get('baz').value, equals('qux'));
     cookies.remove('baz');
     expect(cookies.get('baz'), isNull);
   });
 
-  test('converts entries back to header string', () {
-    var cookies = CookieParser.fromHeader('foo=bar');
-    expect(cookies.toString(), equals('foo=bar'));
-    cookies.set('baz', 'qux');
-    expect(cookies.toString(), equals('foo=bar, baz=qux'));
+  test('clears all cookies in list', () {
+    var cookies = CookieParser.fromCookieValue('foo=bar; baz=qux');
+    expect(cookies.get('baz').value, equals('qux'));
+    cookies.clear();
+    expect(cookies.isEmpty, isTrue);
+  });
+
+  test('folds all cookies into single set-cookie header value', () {
+    var cookies = CookieParser.fromCookieValue('foo=bar');
+    expect(cookies.toString(), equals('foo=bar; HttpOnly'));
+    cookies.set('baz', 'qux', secure: true);
+    expect(
+      cookies.toString(),
+      equals('foo=bar; HttpOnly, baz=qux; Secure; HttpOnly'),
+    );
   });
 }

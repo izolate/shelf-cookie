@@ -3,7 +3,8 @@
 Cookie parser middleware for the Dart Shelf ecosystem.
 Reads cookies in request, sets cookies in response.
 
-Adds a `CookieParser` instance to `request.context['cookies']` to manipulate cookies.
+Adds a `CookieParser` instance to `request.context['cookies']` to help
+manipulate cookies.
 
 ## Example
 
@@ -12,17 +13,27 @@ import 'dart:io';
 import 'package:shelf/shelf.dart' as shelf;
 import 'package:shelf_cookie/shelf_cookie.dart';
 
-/// Request contains cookie header.
-/// e.g. 'cookie': 'ping=foo'
+/// Handle a request that contains a `Cookie` header.
+/// e.g. 'Cookie': 'ping=foo'
 var handler = const shelf.Pipeline()
+    // initialize cookie parser middleware
     .addMiddleware(cookieParser())
     .addHandler((req) async {
   CookieParser cookies = req.context['cookies'];
-  if (cookies.get('ping') == 'foo') {
-    cookies.set('pong', 'bar');
-  }
-  // Response will set cookie header.
-  // e.g. 'set-cookie': 'ping=foo, pong=bar'
+
+  // Retrieve request cookies.
+  var reqCookie = cookies.get('ping');
+  print(reqCookie.name); // foo
+
+  // Clear cookies because Shelf currently only supports
+  // a single `Set-Cookie` header in response.
+  cookies.clear();
+
+  // Create a cookie for response.
+  var resCookie = cookies.set('pong', 'bar', secure: true);
+
+  // Middleware will add `Set-Cookie` response header.
+  // e.g. 'Set-Cookie': 'pong=bar; Secure; HttpOnly'
   return shelf.Response.ok('OK');
 });
 ```

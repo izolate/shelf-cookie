@@ -1,49 +1,103 @@
+import 'dart:io';
+
+import 'package:shelf/shelf.dart';
+
 /// Parses cookies from the `Cookie` header of a [Request].
 ///
 /// Stores all cookies in a [Map], with convenience methods to
 /// get and set entries. Exposes a `toString()` method to convert
 /// entries back to the raw HTTP header value.
 class CookieParser {
-  /// A [Map] of HTTP cookies.
-  final Map<String, String> entries = {};
+  /// A list of parsed cookies.
+  final List<Cookie> cookies = [];
 
-  /// Creates a new [CookieParser] instance from an HTTP [header] value.
-  CookieParser.fromHeader(String header) {
+  /// Creates a new [CookieParser] by parsing the `Cookie` header [value].
+  CookieParser.fromCookieValue(String value) {
     // No cookies.
-    if (header == null) {
+    if (value == null) {
       return;
     }
 
-    // Parse cookie header and update entries [Map].
-    List<String> cookies = header.split(';');
-    // There's no delimiter if there's only one cookie.
-    if (cookies.isEmpty) {
-      cookies = <String>[header];
+    // Request header cookies are delimited by a semicolon.
+    List<String> items = value.split(';');
+    // But there's no delimiter if there's only one cookie.
+    if (items.isEmpty) {
+      items = <String>[value];
     }
-    for (var cookie in cookies) {
-      var parts = cookie.trim().split('=');
-      entries.putIfAbsent(parts.first, () => parts.last);
+    for (var item in items) {
+      var parts = item.trim().split('=');
+      cookies.add(Cookie(parts.first, parts.last));
     }
   }
 
-  /// Denotes whether [entries] is empty.
-  bool get isEmpty => entries.isEmpty;
+  /// Factory constructor to create a new instance from request [headers].
+  factory CookieParser.fromHeader(Map<String, dynamic> headers) {
+    return CookieParser.fromCookieValue(headers[HttpHeaders.cookieHeader]);
+  }
 
-  /// Convenience method to retrieve a cookie by [name].
-  String get(String name) => entries[name];
+  /// Denotes whether the [cookies] list is empty.
+  bool get isEmpty => cookies.isEmpty;
 
-  /// Convenience method to add a new cookie entry to [entries].
-  String set(String name, value) =>
-      entries.update(name, (_) => value, ifAbsent: () => value);
+  /// Retrieves a cookie by [name].
+  Cookie get(String name) => cookies
+      .firstWhere((Cookie cookie) => cookie.name == name, orElse: () => null);
 
-  /// Convenience method to remove a cookie by [name].
-  String remove(String name) => entries.remove(name);
+  /// Adds a new cookie to [cookies] list.
+  Cookie set(
+    String name,
+    String value, {
+    String domain,
+    String path,
+    DateTime expires,
+    bool httpOnly,
+    bool secure,
+    int maxAge,
+  }) {
+    var cookie = Cookie(name, value);
+    if (domain != null) cookie.domain = domain;
+    if (path != null) cookie.path = path;
+    if (expires != null) cookie.expires = expires;
+    if (httpOnly != null) cookie.httpOnly = httpOnly;
+    if (secure != null) cookie.secure = secure;
+    if (maxAge != null) cookie.maxAge = maxAge;
 
-  /// Converts the [entries] to a HTTP header string value.
+    // Update existing cookie, or append new one to list.
+    var index = cookies.indexWhere((item) => item.name == name);
+    if (index != -1) {
+      cookies.replaceRange(index, index + 1, [cookie]);
+    } else {
+      cookies.add(cookie);
+    }
+    return cookie;
+  }
+
+  /// Removes a cookie from list by [name].
+  void remove(String name) =>
+      cookies.removeWhere((Cookie cookie) => cookie.name == name);
+
+  /// Clears the cookie list.
+  void clear() => cookies.clear();
+
+  /// Converts the cookies to a string value to use in a `Set-Cookie` header.
+  ///
+  /// This implements the old RFC 2109 spec, which allowed for multiple
+  /// cookies to be folded into a single `Set-Cookie` header value,
+  /// separated by commas.
+  ///
+  /// As of RFC 6265, this folded mechanism is deprecated in favour of
+  /// a multi-header approach.
+  ///
+  /// Unfortunately, Shelf doesn't currently support multiple headers
+  /// of the same type. This is an ongoing issue, but once resolved,
+  /// this method can effectively be removed.
+  ///
+  /// https://github.com/dart-lang/shelf/issues/44
   String toString() {
-    var str = '';
-    entries.forEach((entry, value) => str += '$entry=$value, ');
-    // Trim the trailing delimiter from the end of the string.
-    return str.endsWith(', ') ? str.substring(0, str.length - 2) : str;
+    return cookies.fold(
+      '',
+      (prev, element) => prev.isEmpty
+          ? element.toString()
+          : '${prev.toString()}, ${element.toString()}',
+    );
   }
 }
