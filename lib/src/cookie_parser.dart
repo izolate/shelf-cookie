@@ -4,29 +4,19 @@ import 'package:shelf/shelf.dart';
 
 /// Parses cookies from the `Cookie` header of a [Request].
 ///
-/// Stores all cookies in a [Map], with convenience methods to
-/// get and set entries. Exposes a `toString()` method to convert
-/// entries back to the raw HTTP header value.
+/// Stores all cookies in a [cookies] list, and has convenience
+/// methods to manipulate this list.
+///
+/// `toString()` method converts list items to a `Set-Cookie`
+/// HTTP header value according to RFC 2109 spec (deprecated).
 class CookieParser {
   /// A list of parsed cookies.
   final List<Cookie> cookies = [];
 
   /// Creates a new [CookieParser] by parsing the `Cookie` header [value].
   CookieParser.fromCookieValue(String value) {
-    // No cookies.
-    if (value == null) {
-      return;
-    }
-
-    // Request header cookies are delimited by a semicolon.
-    List<String> items = value.split(';');
-    // But there's no delimiter if there's only one cookie.
-    if (items.isEmpty) {
-      items = <String>[value];
-    }
-    for (var item in items) {
-      var parts = item.trim().split('=');
-      cookies.add(Cookie(parts.first, parts.last));
+    if (value != null) {
+      cookies.addAll(_parseCookieString(value));
     }
   }
 
@@ -89,7 +79,7 @@ class CookieParser {
   ///
   /// Unfortunately, Shelf doesn't currently support multiple headers
   /// of the same type. This is an ongoing issue, but once resolved,
-  /// this method can effectively be removed.
+  /// this method can be deprecated.
   ///
   /// https://github.com/dart-lang/shelf/issues/44
   String toString() {
@@ -100,4 +90,72 @@ class CookieParser {
           : '${prev.toString()}, ${element.toString()}',
     );
   }
+}
+
+/// Parse a Cookie header value according to the rules in RFC 6265.
+/// This function was adapted from `dart:io`.
+List<Cookie> _parseCookieString(String s) {
+  var cookies = List<Cookie>();
+
+  int index = 0;
+
+  bool done() => index == -1 || index == s.length;
+
+  void skipWS() {
+    while (!done()) {
+      if (s[index] != " " && s[index] != "\t") return;
+      index++;
+    }
+  }
+
+  String parseName() {
+    int start = index;
+    while (!done()) {
+      if (s[index] == " " || s[index] == "\t" || s[index] == "=") break;
+      index++;
+    }
+    return s.substring(start, index);
+  }
+
+  String parseValue() {
+    int start = index;
+    while (!done()) {
+      if (s[index] == " " || s[index] == "\t" || s[index] == ";") break;
+      index++;
+    }
+    return s.substring(start, index);
+  }
+
+  bool expect(String expected) {
+    if (done()) return false;
+    if (s[index] != expected) return false;
+    index++;
+    return true;
+  }
+
+  while (!done()) {
+    skipWS();
+    if (done()) continue;
+    String name = parseName();
+    skipWS();
+    if (!expect("=")) {
+      index = s.indexOf(';', index);
+      continue;
+    }
+    skipWS();
+    String value = parseValue();
+    try {
+      cookies.add(Cookie(name, value));
+    } catch (_) {
+      // Skip it, invalid cookie data.
+    }
+    skipWS();
+    if (done()) continue;
+    if (!expect(";")) {
+      index = s.indexOf(';', index);
+      continue;
+    }
+  }
+
+  return cookies;
 }
