@@ -1,5 +1,6 @@
 import 'dart:io';
 
+import 'package:collection/collection.dart' show IterableExtension;
 import 'package:shelf/shelf.dart';
 
 /// Parses cookies from the `Cookie` header of a [Request].
@@ -14,7 +15,7 @@ class CookieParser {
   final List<Cookie> cookies = [];
 
   /// Creates a new [CookieParser] by parsing the `Cookie` header [value].
-  CookieParser.fromCookieValue(String value) {
+  CookieParser.fromCookieValue(String? value) {
     if (value != null) {
       cookies.addAll(_parseCookieString(value));
     }
@@ -29,19 +30,19 @@ class CookieParser {
   bool get isEmpty => cookies.isEmpty;
 
   /// Retrieves a cookie by [name].
-  Cookie get(String name) => cookies
-      .firstWhere((Cookie cookie) => cookie.name == name, orElse: () => null);
+  Cookie? get(String name) => cookies
+      .firstWhereOrNull((Cookie cookie) => cookie.name == name);
 
   /// Adds a new cookie to [cookies] list.
   Cookie set(
     String name,
     String value, {
-    String domain,
-    String path,
-    DateTime expires,
-    bool httpOnly,
-    bool secure,
-    int maxAge,
+    String? domain,
+    String? path,
+    DateTime? expires,
+    bool? httpOnly,
+    bool? secure,
+    int? maxAge,
   }) {
     var cookie = Cookie(name, value);
     if (domain != null) cookie.domain = domain;
@@ -95,7 +96,7 @@ class CookieParser {
 /// Parse a Cookie header value according to the rules in RFC 6265.
 /// This function was adapted from `dart:io`.
 List<Cookie> _parseCookieString(String s) {
-  var cookies = List<Cookie>();
+  var cookies = <Cookie>[];
 
   int index = 0;
 
