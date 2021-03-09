@@ -8,7 +8,7 @@ void main() {
   var handler = const shelf.Pipeline()
       .addMiddleware(cookieParser())
       .addHandler((req) async {
-    CookieParser cookies = req.context['cookies'];
+    CookieParser cookies = req.context['cookies'] as CookieParser;
     if (cookies.get('ping') != null) {
       // Clear cookies because Shelf currently only supports
       // a single `Set-Cookie` header in response.
